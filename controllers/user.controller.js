@@ -1,67 +1,79 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-
 import Users from "../models/users.model.js";
+import Chats from "../models/chats.model.js";
 
-// user login
-export const login = async (req, res) => {
+export const loginedUser = async (req, res) => {
   try {
-    const user = await Users.findOne({ phone: req.body.phone });
-    console.log(user);
-    if (!user) return res.json("user not found");
+    const userId = req.params.id;
+    if (!userId) return res.send("something error! try again ");
 
-    const correct = bcrypt.compareSync(req.body.password, user.password);
-    if (!correct) return res.json("incorrect user and password");
+    const user = await Users.findById(userId).select("-password");
+    if (!user) return res.send("user not found");
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        isLogin: user.isLogin,
-      },
-      process.env.JWT_TOKEN
-    );
-    const { password, ...info } = user._doc;
-    info.isLogin = true;
-
-    res
-      .cookie("accessToken", token, {
-        httpOnly: false,
-        secure: "development",
-        sameSite: "Strict",
-        maxAge: 24 * 60 * 60 * 1000, // 1 day
-      })
-      .status(200)
-      .send(info);
-
-    // res.json({ "login successful": user });
+    res.json(user);
   } catch (error) {
-    console.log(error);
-    res.json(error);
+    res.send("error" + error);
   }
 };
 
-// current user logout
-export const logout = async (req, res) => {
-  res.json("logout successfully");
+export const currChat = async (req, res) => {
+  async (req, res) => {
+    try {
+      const userId = req.params.id;
+      //   const resp = await Users.findById(userId);
+
+      res.json(userId);
+    } catch (error) {
+      res.json("erro");
+    }
+  };
 };
 
-// new user create
-export const register = async (req, res) => {
+export const addContact = async (req, res) => {
   try {
-    const user = await Users.findOne({ phone: req.body.phone });
-    console.log(user);
-    if (user) return res.json("already registered");
+    const { userId, newContact } = req.body;
+    const currUser = await Users.findOne({ phone: userId });
 
-    if (req.body.phone.toString().length == 10) {
-      const hashPassword = bcrypt.hashSync(req.body.password, 8);
-      const newUser = new Users({ ...req.body, password: hashPassword });
-      console.log(newUser);
-      await newUser.save();
-      res.json("registered successfull");
-    } else {
-      res.json("phone number must be 10 digit");
+    const newUser = await Users.findOne({ phone: newContact });
+    if (newUser === null) return res.json("user not found");
+
+    for (const con of currUser.contacts) {
+      if (con.userId.toString() === newUser._id.toString())
+        return res.json("chats exist");
     }
+
+    const newChat = new Chats();
+    newChat.participant.push(currUser._id);
+    newChat.participant.push(newUser._id);
+
+    const newCont = {
+      userId: newUser._id,
+      chatId: newChat._id,
+    };
+    currUser.contacts.push(newCont);
+    await newChat.save();
+    await currUser.save();
+
+    res.json("done");
   } catch (error) {
-    return res.json("error", error);
+    res.json(error.message);
+  }
+};
+
+export const currUserContact = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await Users.findById(userId);
+    const allContacts = [];
+    for (const con of user.contacts) {
+      const { _id, name, phone, avatar, about, isOnline } =
+        await Users.findById(con.userId);
+      const chatId = con.chatId;
+      const data = { _id, name, phone, avatar, about, isOnline, chatId };
+      allContacts.push(data);
+    }
+    res.json(allContacts);
+  } catch (error) {
+    console.log(error.message);
+    res.json(error.message);
   }
 };

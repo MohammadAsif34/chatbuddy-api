@@ -2,7 +2,25 @@ import express from "express";
 import Users from "../models/users.model.js";
 import mongoose from "mongoose";
 
+import {
+  loginedUser,
+  currChat,
+  addContact,
+  currUserContact,
+} from "../controllers/user.controller.js";
+
 const router = express.Router();
+
+// get info of logined user
+router.post("/:id/user", loginedUser);
+
+// get all contacts of currentUSer  which contains contactId, chatId
+router.post("/:id/chats", currChat);
+
+// get current user contacts
+router.post("/:id/contacts", currUserContact);
+
+router.post("/addContact", addContact);
 
 //get client by post
 router.post("/client", async (req, res) => {
@@ -32,20 +50,6 @@ router.post("/client", async (req, res) => {
 });
 
 //get single user by post
-router.post("/user", async (req, res) => {
-  try {
-    const { userId } = req.body;
-
-    if (!userId) return res.send("provide userId" + userId);
-    if (!mongoose.Types.ObjectId.isValid(userId))
-      return res.send("invalid userId format");
-    const user = await Users.findById(new mongoose.Types.ObjectId(userId));
-    if (!user) return res.send("user not found");
-    res.send(user);
-  } catch (error) {
-    res.send("error" + error);
-  }
-});
 
 // to get all users
 router.get("/users", async (req, res) => {

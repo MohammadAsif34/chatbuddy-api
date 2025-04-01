@@ -2,16 +2,12 @@ import mongoose from "mongoose";
 
 const chatsSchema = new mongoose.Schema(
   {
-    participants: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Users",
-    },
-    lastMessages: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Messages",
-    },
+    participant: [{ type: mongoose.Schema.Types.ObjectId, ref: "Users" }],
+    chatHistory: [{ type: mongoose.Schema.Types.ObjectId, ref: "Message" }],
   },
   { timestamps: true }
 );
-
-module.exports = mongoose.Schema("Chats", chatsSchema);
+chatsSchema.path("participant").validate(function (value) {
+  return value.length === 2;
+}, "this is private chat");
+export default mongoose.model("Chats", chatsSchema);

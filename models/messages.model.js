@@ -1,18 +1,21 @@
 import mongoose from "mongoose";
 
-const messagesSchema = mongoose.Schema(
+const messageSchema = new mongoose.Schema(
   {
-    sender: { type: String, required: true, unique: true },
-    chatId: { type: String, required: true },
-    content: String,
-    messageType: { type: String, enum: ["text"], default: "text" },
+    sender: { type: mongoose.Schema.Types.ObjectId, required: true },
+    mssg: { type: String, required: true },
+    messageType: {
+      type: String,
+      enum: ["text", "file", "document", "photo"],
+      default: "text",
+    },
     status: {
       type: String,
       enum: ["sent", "delivered", "read"],
-      default: "text",
+      default: "sent",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.Schema("Messages", messagesSchema);
+export default mongoose.model("Message", messageSchema);
